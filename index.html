@@ -463,17 +463,39 @@ src="https://www.facebook.com/tr?id=1079460644678765&ev=PageView&noscript=1"
   var isNavigating = false;
 
   function handleTelegramClick(){
-    if (isNavigating) return;
-    isNavigating = true;
+  if (isNavigating) return;
+  isNavigating = true;
 
-    trackEvent('Subscribe', { content_name: 'Telegram Channel Join', value: 0, currency: 'INR' });
+  // Same event_id is used by Browser Pixel + Server CAPI
+  var eventId = trackEvent('Subscribe', {
+    content_name: 'Telegram Channel Join',
+    value: 0,
+    currency: 'INR'
+  });
 
-    // small timeout lets the pixel request fire before navigation
-    setTimeout(function(){
-      window.open(TELEGRAM_URL, '_blank', 'noopener');
-      setTimeout(function(){ isNavigating = false; }, 800);
-    }, 120);
-  }
+  // Send the same event to the Vercel CAPI endpoint
+  fetch('/api/meta-event', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      event_id: eventId,
+      event_name: 'Subscribe',
+      event_source_url: window.location.href
+    }),
+    keepalive: true
+  }).catch(function(error){
+    console.error('CAPI error:', error);
+  });
+
+  // Open Telegram
+  window.open(TELEGRAM_URL, '_blank', 'noopener');
+
+  setTimeout(function(){
+    isNavigating = false;
+  }, 800);
+}
 
   document.getElementById('ctaTop').addEventListener('click', handleTelegramClick);
   document.getElementById('ctaBottom').addEventListener('click', handleTelegramClick);
