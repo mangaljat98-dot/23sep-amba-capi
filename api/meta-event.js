@@ -4,10 +4,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { event_id, event_name = "Subscribe", event_source_url } = req.body || {};
+    const {
+      event_id,
+      event_name = "Subscribe",
+      event_source_url
+    } = req.body || {};
 
     if (!event_id) {
-      return res.status(400).json({ error: "Missing event_id" });
+      return res.status(400).json({
+        error: "Missing event_id"
+      });
     }
 
     const pixelId = process.env.META_PIXEL_ID;
@@ -24,13 +30,17 @@ export default async function handler(req, res) {
     const payload = {
       data: [
         {
-          event_name,
+          event_name: event_name,
           event_time: eventTime,
-          event_id,
+          event_id: event_id,
           action_source: "website",
-          event_source_url: event_source_url || req.headers.referer || ""
+          event_source_url:
+            event_source_url || req.headers.referer || ""
         }
-      ]
+      ],
+
+      // TEMPORARY: Meta Test Events
+      test_event_code: "TEST81183"
     };
 
     const response = await fetch(
