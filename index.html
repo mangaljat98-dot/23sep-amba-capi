@@ -431,76 +431,102 @@ src="https://www.facebook.com/tr?id=1079460644678765&ev=PageView&noscript=1"
   "use strict";
 
   var TELEGRAM_URL = "https://t.me/+WlLuDCraMwNjNWM1";
-  document.getElementById('year').textContent = new Date().getFullYear();
+  document.getElementById("year").textContent = new Date().getFullYear();
 
-  /* ---------- Modular Meta Pixel event helper (CAPI-ready) ----------
-     Generates a unique event_id per event so a future server-side
-     Conversions API call can send the same event_id for deduplication.
-     No token / CAPI logic lives here — purely front-end pixel + id gen. */
   function generateEventId(prefix){
     var rand = (window.crypto && window.crypto.getRandomValues)
-      ? Array.from(window.crypto.getRandomValues(new Uint32Array(2))).map(function(n){return n.toString(36);}).join('')
-      : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-    return (prefix || 'evt') + '_' + Date.now() + '_' + rand;
+      ? Array.from(
+          window.crypto.getRandomValues(new Uint32Array(2))
+        ).map(function(n){
+          return n.toString(36);
+        }).join("")
+      : Math.random().toString(36).slice(2) +
+        Math.random().toString(36).slice(2);
+
+    return (prefix || "evt") + "_" + Date.now() + "_" + rand;
+  }
+
+  function sendCAPI(eventName, eventId){
+    try {
+      fetch("/api/meta-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        keepalive: true,
+        body: JSON.stringify({
+          event_name: eventName,
+          event_id: eventId,
+          event_source_url: window.location.href
+        })
+      }).catch(function(){});
+    } catch(e) {}
   }
 
   function trackEvent(eventName, customData){
     var eventId = generateEventId(eventName.toLowerCase());
-    try{
-      if (typeof fbq === 'function'){
-        fbq('track', eventName, customData || {}, { eventID: eventId });
+
+    try {
+      if (typeof fbq === "function") {
+        fbq(
+          "track",
+          eventName,
+          customData || {},
+          {
+            eventID: eventId
+          }
+        );
       }
-    }catch(e){ /* fail silently, never break the UI */ }
+    } catch(e) {}
+
+    sendCAPI(eventName, eventId);
+
     return eventId;
   }
 
-  // ViewContent once the page has fully loaded
-  window.addEventListener('load', function(){
-    trackEvent('ViewContent', { content_name: 'Gauttam Jhaa Trading Education Landing Page' });
+  /* ViewContent */
+  window.addEventListener("load", function(){
+    trackEvent("ViewContent", {
+      content_name: "Gauttam Jhaa Trading Education Landing Page"
+    });
   });
 
-  // Double-click / duplicate-tap guard
   var isNavigating = false;
 
   function handleTelegramClick(){
-  if (isNavigating) return;
-  isNavigating = true;
+    if (isNavigating) return;
 
-  // Same event_id is used by Browser Pixel + Server CAPI
-  var eventId = trackEvent('Subscribe', {
-    content_name: 'Telegram Channel Join',
-    value: 0,
-    currency: 'INR'
-  });
+    isNavigating = true;
 
-  // Send the same event to the Vercel CAPI endpoint
-  fetch('/api/meta-event', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      event_id: eventId,
-      event_name: 'Subscribe',
-      event_source_url: window.location.href
-    }),
-    keepalive: true
-  }).catch(function(error){
-    console.error('CAPI error:', error);
-  });
+    trackEvent("Subscribe", {
+      content_name: "Telegram Channel Join",
+      value: 0,
+      currency: "INR"
+    });
 
-  // Open Telegram
-  window.open(TELEGRAM_URL, '_blank', 'noopener');
+    setTimeout(function(){
+      window.open(
+        TELEGRAM_URL,
+        "_blank",
+        "noopener"
+      );
 
-  setTimeout(function(){
-    isNavigating = false;
-  }, 800);
-}
+      setTimeout(function(){
+        isNavigating = false;
+      }, 800);
 
-  document.getElementById('ctaTop').addEventListener('click', handleTelegramClick);
-  document.getElementById('ctaBottom').addEventListener('click', handleTelegramClick);
+    }, 300);
+  }
+
+  document
+    .getElementById("ctaTop")
+    .addEventListener("click", handleTelegramClick);
+
+  document
+    .getElementById("ctaBottom")
+    .addEventListener("click", handleTelegramClick);
+
 })();
 </script>
-
 </body>
 </html>
